@@ -18,13 +18,23 @@ public static class MechanicalPowerPatch
 {
     [ThreadStatic] private static List<MechanicalNetwork> pooled;
 
-    public static void Apply(Harmony harmony)
+    /// <summary>Returns true if patched, false if the method has no ToList snapshot (already optimized).</summary>
+    public static bool Apply(Harmony harmony)
     {
         var target = AccessTools.Method(typeof(MechanicalPowerMod), "OnServerGameTick", new[] { typeof(float) })
             ?? throw new Exception("MechanicalPowerMod.OnServerGameTick not found");
+        int sites = 0;
+        foreach (var ins in PatchProcessor.GetOriginalInstructions(target))
+        {
+            if (ins.opcode == OpCodes.Call && ins.operand is MethodInfo m && m.IsGenericMethod
+                && m.DeclaringType == typeof(Enumerable) && m.Name == "ToList"
+                && m.GetGenericArguments() is { Length: 1 } g && g[0] == typeof(MechanicalNetwork)) sites++;
+        }
+        if (sites == 0) return false;
         harmony.Patch(target,
             transpiler: new HarmonyMethod(typeof(MechanicalPowerPatch), nameof(Transpiler)),
             finalizer: new HarmonyMethod(typeof(MechanicalPowerPatch), nameof(Finalizer)));
+        return true;
     }
 
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)

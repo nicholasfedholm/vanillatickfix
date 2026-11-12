@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using HarmonyLib;
 using Vintagestory.API.Common;
 
@@ -53,13 +53,13 @@ public class vanillatickfixModSystem : ModSystem
         }
 
         harmony = new Harmony(HarmonyId);
-        Try(api, "RepulseAgentsDelegateCache", cfg.RepulseAgentsDelegateCache, () => RepulseAgentsPatch.Apply(harmony));
-        Try(api, "AnimationManagerAnyFix", cfg.AnimationManagerAnyFix, () => AnimationManagerPatch.Apply(harmony));
+        Try(api, "RepulseAgentsDelegateCache", cfg.RepulseAgentsDelegateCache, () => { RepulseAgentsPatch.Apply(harmony); return true; });
+        Try(api, "AnimationManagerAnyFix", cfg.AnimationManagerAnyFix, () => { AnimationManagerPatch.Apply(harmony); return true; });
         Try(api, "MechanicalPowerPooledList", cfg.MechanicalPowerPooledList, () => MechanicalPowerPatch.Apply(harmony));
         }
     }
 
-    private static void Try(ICoreAPI api, string name, bool enabled, Action apply)
+    private static void Try(ICoreAPI api, string name, bool enabled, Func<bool> apply)
     {
         if (!enabled)
         {
@@ -68,8 +68,14 @@ public class vanillatickfixModSystem : ModSystem
         }
         try
         {
-            apply();
-            api.Logger.Notification("[vanillatickfix] {0}: applied", name);
+            if (apply())
+            {
+                api.Logger.Notification("[vanillatickfix] {0}: applied", name);
+            }
+            else
+            {
+                api.Logger.Notification("[vanillatickfix] {0}: not needed (no ToList snapshot, already optimized, e.g. Optimum), left vanilla", name);
+            }
         }
         catch (Exception e)
         {

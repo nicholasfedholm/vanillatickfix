@@ -7,7 +7,7 @@
         "Nick"
     ],
     "description": "Behavior-neutral allocation fixes for vanilla per-tick hot paths (Harmony). Each patch has its own on/off switch in ModConfig/vanillatickfix.json.",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "dependencies": {
         "game": "1.22.0"
     }
